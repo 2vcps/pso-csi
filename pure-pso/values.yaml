@@ -1,4 +1,4 @@
-# Default values for pureStorageDriver.
+# Default values for pure-pso.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -6,6 +6,9 @@
 # clusterID is also used to identify the volumes used by the datastore, pso-db.
 # clusterID MUST BE UNIQUE for multiple k8s clusters running on top of the same storage arrays.
 # NOTE: in previous versions, this property was called "namespace.pure"
+# RESTRICTIONS:
+#  max length: 22
+#  characters allowed: alphanumeric and underscores
 clusterID: REPLACE_CLUSTER_ID_WITH_A_UNIQUE_VALUE_FOR_YOUR_CLUSTER
 
 # support k8s or openshift
@@ -26,28 +29,28 @@ storagetopology:
 
 # arrays specify what storage arrays should be managed by the plugin, this is
 # required to be set upon installation. For FlashArrays you must set the "MgmtEndPoint"
-# and "APIToken", and for FlashBlades you need the additional "NfsEndPoint" parameter.
+# and "APIToken", and for FlashBlades you need the additional "NFSEndPoint" parameter.
 # The labels are optional, and can be any key-value pair for use with the "fleet"
 # provisioner. An example is shown below:
 # arrays:
 #   FlashArrays:
-#   - MgmtEndPoint: "1.2.3.4"
-#     APIToken: "a526a4c6-18b0-a8c9-1afa-3499293574bb"
-#     Labels:
-#   - MgmtEndPoint: "1.2.3.5"
-#     APIToken: "b526a4c6-18b0-a8c9-1afa-3499293574bb"
+#     - MgmtEndPoint: "1.2.3.4"
+#       APIToken: "a526a4c6-18b0-a8c9-1afa-3499293574bb"
+#       Labels:
+#     - MgmtEndPoint: "1.2.3.5"
+#       APIToken: "b526a4c6-18b0-a8c9-1afa-3499293574bb"
 #   FlashBlades:
-#   - MgmtEndPoint: "1.2.3.6"
-#     APIToken: "T-c4925090-c9bf-4033-8537-d24ee5669135"
-#     NfsEndPoint: "1.2.3.7"
-#     Labels:
-#   - MgmtEndPoint: "1.2.3.8"
-#     APIToken: "T-d4925090-c9bf-4033-8537-d24ee5669135"
-#     NfsEndPoint: "1.2.3.9"
+#     - MgmtEndPoint: "1.2.3.6"
+#       APIToken: "T-c4925090-c9bf-4033-8537-d24ee5669135"
+#       NFSEndPoint: "1.2.3.7"
+#       Labels:
+#     - MgmtEndPoint: "1.2.3.8"
+#       APIToken: "T-d4925090-c9bf-4033-8537-d24ee5669135"
+#       NFSEndPoint: "1.2.3.9"
 arrays:
   FlashArrays: []
   FlashBlades: []
-  
+
 flasharray:
   # support ISCSI or FC, not case sensitive
   sanType: ISCSI
@@ -64,7 +67,7 @@ flashblade:
 images:
   plugin:
     name: purestorage/k8s
-    tag: 6.0.0-rc1
+    tag: v6.0.1
     pullPolicy: Always
   csi:
     provisioner:
@@ -79,9 +82,6 @@ images:
     resizer:
       name: quay.io/k8scsi/csi-resizer
       pullPolicy: Always
-    clusterDriverRegistrar:
-      name: quay.io/k8scsi/csi-cluster-driver-registrar
-      pullPolicy: Always
     nodeDriverRegistrar:
       name: quay.io/k8scsi/csi-node-driver-registrar
       pullPolicy: Always
@@ -91,12 +91,18 @@ images:
   database:
     deployer:
       name: purestorage/dbdeployer
-      tag: 1.0.0-rc1
+      tag: v1.0.1
       pullPolicy: Always
     cockroachOperator:
       name: purestorage/cockroach-operator
-      tag: 1.0.0-rc1
+      tag: v1.0.1
       pullPolicy: Always
+    psctl:
+      name: purestorage/psctl
+      tag: v1.0.0
+    cockroachdb:
+      name: cockroachdb/cockroach
+      tag: v19.2.3
 
 # specify the service account name for this app
 clusterrolebinding:
@@ -170,6 +176,9 @@ database:
   #   memory: "8Gi"
 
   # The length of time a db node is considered Suspect before being marked as Down
-  maxSuspectSeconds: 300
-  # The length of time a db node is allowed to be in Startup before being marked as Down
-  maxStartupSeconds: 300
+  # This value is recommended to be larger than Kubernetes liveness probe setting time in our db pod, 
+  # so K8S gets chance to restart the pod if it's unhealthy before we take it down.
+  # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
+  maxSuspectSeconds: 1800
+  # The length of time a db node is allowed to be in Startup before being suspect
+  maxStartupSeconds: 600

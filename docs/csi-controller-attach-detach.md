@@ -2,7 +2,7 @@
 
 ## Introduction
 Pure Service Orchestrator has three main components: the controller (1 per deployment), the nodes (1 per every
-Kubernetes node you are deploying storage on), and the database (cockroach-operator and db-deployer pods, plus 3 to 7
+Kubernetes node you are deploying storage on), and the database (cockroach-operator and db-deployer pods, plus 5 to 7
 pso-db pods). The controller and database orchestrators require REST access to the management endpoints of your Pure
 Storage devices. For security reasons, it may be desirable to restrict these pods to run only on specific nodes (such as
 master nodes) to limit API access.
@@ -126,3 +126,12 @@ nodeSelector: {
   "allow-pso": "true"
 }
 ```
+## Debugging
+### Pods stuck in "Pending" state
+If pods are stuck in a pending state, you've most likely either:
+* Specified an invalid node selector or affinity that doesn't exist on any nodes
+* Specified a node selector but those nodes have taints on them
+
+Please double-check that you've typed/copied everything correctly, that you're aware of all taints on your nodes, etc.
+If you want more debugging information, `kubectl describe pod <pending pod name>` will give more information into what
+is causing the scheduling error.

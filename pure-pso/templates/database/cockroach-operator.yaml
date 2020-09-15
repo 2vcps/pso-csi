@@ -31,6 +31,12 @@ spec:
               value: pso-db-runner
             - name: ROLE_BINDING_NAME
               value: pso-db-role
+            - name: SECRET_NAMES
+              value: pso-cockroach-node-certs,pso-cockroach-client-certs
+{{- if eq .Values.orchestrator.name "openshift" }}
+            - name: SCC_NAME
+              value: pso-scc
+{{- end }}
             - name: WATCH_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -49,6 +55,14 @@ spec:
               value: {{ .Values.clusterID }}
             - name: PURE_FLASHARRAY_SAN_TYPE
               value: {{ .Values.flasharray.sanType }}
+            - name: PSCTL_IMAGE
+              value: {{ .Values.images.database.psctl.name }}
+            - name: PSCTL_TAG
+              value: {{ .Values.images.database.psctl.tag }}
+            - name: COCKROACHDB_IMAGE
+              value: {{ .Values.images.database.cockroachdb.name }}:{{ .Values.images.database.cockroachdb.tag }}
+          securityContext:
+            privileged: true
           volumeMounts:
             - name: certs
               mountPath: /cockroach/cockroach-certs
